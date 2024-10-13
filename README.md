@@ -11,3 +11,6 @@ The following packages are mainly applied to run this project:
 - scikit-learn 1.3.0
 - Pandas 2.0.3
 - NumPy 1.24.4
+
+## Run the Model
+python model_training.py
