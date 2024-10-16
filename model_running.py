@@ -11,78 +11,31 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
 import logging
+import argparse
 
-
-#torch.backends.cudnn.enabled = False
+# torch.backends.cudnn.enabled = False
 torch.cuda.empty_cache()
 
+# Detect if GPU is available
 if torch.cuda.is_available():
     device = torch.device("cuda")
-    torch.cuda.set_device(0) 
-    #print("Current GPU:", torch.cuda.current_device())
+    torch.cuda.set_device(0)
     logging.info("Current GPU: %d", torch.cuda.current_device())
 else:
     device = torch.device("cpu")
-    #print("Using CPU.")
     logging.info("Using CPU.")
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train CNN1D model with variable input channels.')
     parser.add_argument('--input_channels', type=int, default=5, help='Number of input channels for the CNN model.')
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of training epochs.')
     parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for the optimizer.')
-    
     return parser.parse_args()
-
-args = parse_args()
-
 
 def data_split(X, y):
     train_data, test_X, train_labels, test_y = train_test_split(X, y, test_size=0.25, random_state=42)
     train_X, val_X, train_y, val_y = train_test_split(train_data, train_labels, test_size=0.2, random_state=42)
-    
     return train_X, train_y, val_X, val_y, test_X, test_y
-
-
-'''
-Data format:
-train_X, test_X: (sample_num, 110)
-train_y, test_y: (sample_num, )
-The example code here is showing training process including all five features.
-'''
-
-data = np.concatenate([np.expand_dims(CAGE_X, axis=2), 
-                                np.expand_dims(H3K4me3_X, axis=2), 
-                                np.expand_dims(DNase_X, axis=2), 
-                                np.expand_dims(DBTSS_X, axis=2),
-                                np.expand_dims(Pol2_X, axis=2)], 
-                                axis=2)
-
-data = np.transpose(data, (0, 2, 1))
-
-
-train_X, train_y, val_X, val_y, test_X, test_y = data_split(data, np.where(CAGE_y == -1, 0, 1))
-
-train_data_tensor = torch.Tensor(train_X)
-train_labels_tensor = torch.LongTensor(train_y)
-
-val_data_tensor = torch.Tensor(val_X)
-val_labels_tensor = torch.LongTensor(val_y)
-
-test_data_tensor = torch.Tensor(test_X)
-test_labels_tensor = torch.LongTensor(test_y)
-
-
-batch_size = 32
-train_dataset = TensorDataset(train_data_tensor, train_labels_tensor)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
-val_dataset = TensorDataset(val_data_tensor, val_labels_tensor)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-test_dataset = TensorDataset(test_data_tensor, test_labels_tensor)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 class CNN1D(nn.Module):
     def __init__(self, input_channels):
@@ -112,10 +65,6 @@ class CNN1D(nn.Module):
         x = self.fc3(x)
         x = self.softmax(x)
         return x
-
-
-model = CNN1D(input_channels=args.input_channels)
-
 
 def train(model, train_loader, val_loader, num_epochs=100, lr=0.001):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -189,12 +138,42 @@ def test(model, test_loader):
         logging.info(f'Test Loss: {avg_test_loss:.4f}, Test Accuracy: {test_accuracy * 100:.2f}%')
         logging.info(f'Precision: {precision:.4f}, Recall: {recall:.4f}, Accuracy: {accuracy:.4f}, F1 Score: {f1_score:.4f}')
 
+def main():
+    args = parse_args()
 
+    # Sample data generation, replace with real data
+    data = np.concatenate([np.expand_dims(CAGE_X, axis=2), 
+                           np.expand_dims(H3K4me3_X, axis=2), 
+                           np.expand_dims(DNase_X, axis=2), 
+                           np.expand_dims(DBTSS_X, axis=2),
+                           np.expand_dims(Pol2_X, axis=2)], axis=2)
 
-# Train the model
-model = CNN1D()
-train(model, train_loader, val_loader, num_epochs = 50, lr = 0.0005)
+    data = np.transpose(data, (0, 2, 1))
 
+    train_X, train_y, val_X, val_y, test_X, test_y = data_split(data, np.where(CAGE_y == -1, 0, 1))
 
-# Test the model on independent test set
-test(model, test_loader)
+    train_data_tensor = torch.Tensor(train_X)
+    train_labels_tensor = torch.LongTensor(train_y)
+    val_data_tensor = torch.Tensor(val_X)
+    val_labels_tensor = torch.LongTensor(val_y)
+    test_data_tensor = torch.Tensor(test_X)
+    test_labels_tensor = torch.LongTensor(test_y)
+
+    batch_size = 32
+    train_dataset = TensorDataset(train_data_tensor, train_labels_tensor)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataset = TensorDataset(val_data_tensor, val_labels_tensor)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_dataset = TensorDataset(test_data_tensor, test_labels_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+
+    model = CNN1D(input_channels=args.input_channels)
+    
+    # Train the model
+    train(model, train_loader, val_loader, num_epochs=args.num_epochs, lr=args.lr)
+
+    # Test the model
+    test(model, test_loader)
+
+if __name__ == "__main__":
+    main()
