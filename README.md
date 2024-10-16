@@ -13,6 +13,6 @@ The following packages are mainly applied to run this project:
 - NumPy 1.24.4
 
 ## Run the Model
-For example:  
+For example, you can apply the miRStart 2.0 model with different kinds of feature combinations by entering the `input channels` and other parameters:  
 `python model_running.py --input_channels 5 --epochs 50 --lr 0.0005`
 
