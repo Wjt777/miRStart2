@@ -13,5 +13,6 @@ The following packages are mainly applied to run this project:
 - NumPy 1.24.4
 
 ## Run the Model
-For example:
-python model_running.py --input_channels 5 --epochs 50 --lr 0.0005
+For example:  
+`python model_running.py --input_channels 5 --epochs 50 --lr 0.0005`
+
