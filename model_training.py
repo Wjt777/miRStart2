@@ -27,28 +27,18 @@ else:
     device = torch.device("cpu")
     #print("Using CPU.")
     logging.info("Using CPU.")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train CNN1D model with variable input channels.')
+    parser.add_argument('--input_channels', type=int, default=5, help='Number of input channels for the CNN model.')
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of training epochs.')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for the optimizer.')
     
+    return parser.parse_args()
 
-def rearrange_data_high_res(output):
-
-    array_format = np.append(output.columns, np.array(output)).reshape(-1, 111)
-    X = []
-    y = []
-    x = []
-    for arr in array_format:
-        y.append(arr[0])
-        X.append(arr[1:])
-    
-    X = np.array(X)
-    y = np.array(y)
-    feature = np.char.split(X.astype(str), ':')
-    for f in feature:
-        x.append(np.array([list(row) for row in f]).T[1])
-    features = np.array(x).astype(float)
-    labels = np.array(y).astype(float)
-        
-    return features, labels
-
+# 获取命令行参数
+args = parse_args()
 
 def data_split(X, y):
     train_data, test_X, train_labels, test_y = train_test_split(X, y, test_size=0.25, random_state=42)
@@ -57,37 +47,11 @@ def data_split(X, y):
     return train_X, train_y, val_X, val_y, test_X, test_y
 
 
-indices_to_reverse = np.load('/share/home/grp-huangxd/wanjingting/miRStart2/indices_to_reverse_human.npy')
-
-CAGE = pd.read_csv('CAGE/output_svm_format.txt', sep = ' ')
-DBTSS = pd.read_csv('DBTSS/output_svm_format.txt', sep = ' ')
-DNase = pd.read_csv('DNase/output_svm_format.txt', sep = ' ')
-H3K4me3 = pd.read_csv('H3K4me3/output_svm_format.txt', sep = ' ')
-Pol2 = pd.read_csv('Pol2/output_svm_format.txt', sep = ' ')
-
-    
-CAGE_X, CAGE_y = rearrange_data_high_res(CAGE)
-DBTSS_X, DBTSS_y = rearrange_data_high_res(DBTSS)
-DNase_X, DNase_y = rearrange_data_high_res(DNase)
-H3K4me3_X, H3K4me3_y = rearrange_data_high_res(H3K4me3)
-Pol2_X, Pol2_y = rearrange_data_high_res(Pol2)
-
-
-for index in indices_to_reverse:
-    CAGE_X[index] = CAGE_X[index][::-1]
-    DBTSS_X[index] = DBTSS_X[index][::-1]
-    DNase_X[index] = DNase_X[index][::-1]
-    H3K4me3_X[index] = H3K4me3_X[index][::-1]
-    Pol2_X[index] = Pol2_X[index][::-1] 
-       
-indices_to_reverse_neg = indices_to_reverse + 59777
-for index in indices_to_reverse_neg:
-    CAGE_X[index] = CAGE_X[index][::-1]
-    DBTSS_X[index] = DBTSS_X[index][::-1]
-    DNase_X[index] = DNase_X[index][::-1]
-    H3K4me3_X[index] = H3K4me3_X[index][::-1]
-    Pol2_X[index] = Pol2_X[index][::-1] 
-
+'''
+Data format:
+train_X: (sample_num, 110)
+train_y: (sample_num, )
+...
 
 data = np.concatenate([np.expand_dims(CAGE_X, axis=2), 
                                 np.expand_dims(H3K4me3_X, axis=2), 
