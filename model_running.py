@@ -50,7 +50,7 @@ Data format:
 train_X, test_X: (sample_num, 110)
 train_y, test_y: (sample_num, )
 The example code here is showing training process including all five features.
-...
+'''
 
 data = np.concatenate([np.expand_dims(CAGE_X, axis=2), 
                                 np.expand_dims(H3K4me3_X, axis=2), 
